@@ -1,0 +1,168 @@
+2023-03-20 6.4.0
+  - Resource Action: New actions to add / remove mixins (#209)
+  - AEMaaCS doesn't start AECU Migration, due to wrong check in AecuCloudStartupService (#210)
+
+2023-02-23 6.3.0
+  - Upgrade of Orbinson Groovy Console to version 19.0.3 (#205, #208)
+  - New filter method: filterByNodeRootPaths() (#204)
+  - AecuService: added new execute(String path, String data) method which accepts a JSON data string to be used within scipts (#204)
+  - JMX: added that execute(String path, String data) method (#204)
+
+2023-01-27 6.2.0
+  - Use Orbinson Groovy Console instead of CID15 one
+
+2022-12-05 6.1.0
+  - Added history search to AEM Cloud
+
+2022-06-15 6.0.3
+  - Improvements to cloud startup hook (190)
+
+2022-06-03 6.0.2
+  - Improvements to cloud startup hook to avoid double execution and execution before Groovy Console is ready
+
+2022-05-19 6.0.1
+  - Fixed race condition on AEM Cloud startup hook (184)
+
+2022-04-22 6.0.0
+  - Added startup hook for automatic script execution on AEM Cloud (171)
+  - AecuService: added executeWithInstallHookHistory() method (172)
+  - Binding: added "not" versions of all filters
+  - Fixed issue with long installation time on 6.5 (154)
+
+2022-03-28 5.2.0
+  - Added forResourcesByPropertyQuery() to binding
+  - added subNodepath parameter to doSetProperty()/doDeleteProperty()/doRenameProperty() (142)
+  - Rerun failed scripts in install hook and JMX (169)
+  - Possibility to run a prechecks script before the real script (79)
+  - Fixed primary type of navigation entries (168)
+
+2021-08-27 5.1.0
+  - Added doReorderNode() to binding
+
+2021-07-30 5.0.0
+  - AEM Cloud compatibility improvements (separate package for AEM cloud!)
+  - Changed packages: no more bundle package, install always "complete" package (includes Groovy Console)
+  - New location for install hook scripts: /conf/groovyconsole/scripts/aecu (/var/groovyconsole/scripts/aecu still supported)
+  - Members of group "administrators" always have access to AECU history and execution
+
+2021-06-11 4.1.0
+  - New filter methods: filterByNodeExists() and filterByNodeNotExists()
+  - Fixed Sonar issues (#156)
+
+2020-12-21 4.0.0
+  - Update to Groovy Console 16 and require AEM 6.5 (#135)
+  - Fix for AEM Cloud in manual execution tool
+  - Convert GString values in binding methods (#140)
+
+2020-10-07 3.3.0
+  - Allow to change primary type
+  - Documentation and example updates
+  - Fixed issue with UnsupportedOperationException (#136)
+
+2020-06-30 3.2.0
+  - Allow to limit access to AECU via group permissions. Attention: This requires configuration for non-admin users.
+  - Autocomplete added, all AECU methods are listed.
+  - Added parameter "newName" to doCopyResourceToRelativePath action
+  - Added doJoinProperty() methods to binding
+
+2020-04-21 3.1.1
+  - JMX: added executeWithHistory()
+
+2020-02-19 3.1.0
+  - Allow node creation
+  - JDK 11 support
+  - Fixes issues when a page with version history is copied
+
+2019-12-11 3.0.1
+  - Fixed installation issues on new instances
+
+2019-11-22 3.0.0
+  - Update to Groovy Console 14.0.0
+  - Groovy Console binding:
+   - ACL testing allows to check rights of your groups
+
+2019-10-02 2.0.1
+  - Added write permissions for /home to the migration user
+
+2019-07-24 2.0.0
+  - Require Groovy Console 13
+  - Requires AEM 6.4 or 6.5
+  - Script base location moved from /etc/groovyconsole/scripts/aecu to /var/groovyconsole/scripts/aecu
+  - No more "println" required in Groovy scripts
+
+2019-05-03 1.10.1
+  - Fixed bugs:
+   - Added missing package filter entry for deploying the permissions on /var.
+
+2019-05-02 1.10.0
+  - Groovy Console binding:
+   - Added filterByPropertyRegex() and filterByAnyPropertyRegex()
+   - Write access in whole /var
+
+2019-03-22 1.9.0
+  - Support for directory level fallback scripts (fallback.groovy)
+  - Groovy Console binding:
+   - Added tree activation method doTreeActivateContainingPage()
+   - Added resource (de)activation actions doActivateResource()/doDeactivateResource()
+
+2019-01-31 1.8.1
+  - Groovy Console binding:
+   - Write access in whole /etc
+   - Do not print empty lines in output
+
+2019-01-16 1.8.0
+  - Groovy Console binding:
+   - Path renaming via regex
+   - Replace substrings in properties
+
+2018-12-20 1.7.0
+  - Full-text search possibility with Omnisearch (magnifying glass in header)
+  - Groovy Console binding:
+    - Performance increased
+
+2018-10-30 1.6.0
+  - Groovy Console binding:
+    - Added SQL2 collection method
+    - Page actions: manage tags, check page rendering
+    - New resource actions: rename resource
+    - New filter: filter by path regex
+    - New print actions: printProperty and printJson
+
+2018-09-28 1.5.0
+  - Groovy Console binding:
+    - Run custom code as binding action (#28)
+    - Page actions: (de)activate and delete containing page
+  - Better logging (#25)
+  - Enhanced health check (#26)
+  - Fixed bugs:
+    - Exception in log for history page on AEM 6.4 (#24)
+
+2018-08-29 1.4.0
+  - Groovy Console extension:
+    - added filterByProperty()
+    - added filterByHasProperty()
+  - Fixed issue with access rights
+
+2018-08-24 1.3.0
+  - Execute scripts in alphabetical order
+  - Stop execution after first failed script
+  - API changes
+
+2018-08-07 1.2.0
+  - Updated API
+  - AEM 6.4 fix
+  - GUI fixes
+
+2018-07-25 1.1.0
+  - Design improvements
+  - AEM 6.4 support
+  - Moved filter classes to API
+  - Bundle: update Groovy Console to version 12.0.0
+
+2018-07-19 1.0.0
+  - Fixes for install hook
+  - Bundle package that also installs Groovy Console
+  - Performance improvements
+
+2018-07-19 0.9
+  - initial release

@@ -3,14 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>be.orbinson.aem</groupId>
-        <artifactId>aem-groovy-console</artifactId>
-        <version>19.0.4-SNAPSHOT</version>
+        <groupId>de.valtech.aecu</groupId>
+        <artifactId>aecu</artifactId>
+        <version>6.5.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>aem-groovy-console-ui.apps.structure</artifactId>
+    <artifactId>aecu.ui.apps.structure</artifactId>
     <packaging>content-package</packaging>
-    <name>AEM Groovy Console - Repository Structure Package</name>
+    <name>AECU - Repository Structure Package</name>
     <description>
         Empty package that defines the structure of the Adobe Experience Manager repository the Code packages in this project deploy into.
         Any roots in the Code packages of this project should have their parent enumerated in the Filters list below.
@@ -28,7 +28,19 @@
                     </properties>
                     <filters>
                         <filter><root>/apps</root></filter>
-                        <filter><root>/apps/groovyconsole</root></filter>
+                        <filter><root>/apps/sling</root></filter>
+                        <filter><root>/apps/cq</root></filter>
+                        <filter><root>/apps/dam</root></filter>
+                        <filter><root>/apps/wcm</root></filter>
+                        <filter><root>/apps/msm</root></filter>
+                        <filter><root>/apps/settings</root></filter>
+                        <filter><root>/home/users</root></filter>
+                        <filter><root>/home/users/system</root></filter>
+                        <filter><root>/var/workflow/models</root></filter>
+                        <filter><root>/var/workflow/models/dam</root></filter>
+                        <filter><root>/conf</root></filter>
+                        <filter><root>/conf/global</root></filter>
+                        <filter><root>/conf/global/settings</root></filter>
                     </filters>
                 </configuration>
             </plugin>

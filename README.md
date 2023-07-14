@@ -1,204 +1,1129 @@
-[![Maven Central](https://img.shields.io/maven-central/v/be.orbinson.aem/aem-groovy-console)](https://search.maven.org/artifact/be.orbinson.aem/aem-groovy-console-all)
-[![GitHub](https://img.shields.io/github/v/release/orbinson/aem-groovy-console)](https://github.com/orbinson/aem-groovy-console/releases)
-[![Build and test for AEM 6.5](https://github.com/orbinson/aem-groovy-console/actions/workflows/build.yml/badge.svg)](https://github.com/orbinson/aem-groovy-console/actions/workflows/build.yml)
-[![Build with AEM IDE](https://img.shields.io/badge/Built%20with-AEM%20IDE-orange)](https://plugins.jetbrains.com/plugin/9269-aem-ide)
+<img src="https://img.shields.io/github/release/valtech/aem-easy-content-upgrade.svg">
+
+# AEM Easy Content Upgrade (AECU)
+
+AECU simplifies content migrations by executing migration scripts during package installation. It is built on top of [Groovy Console](https://github.com/orbinson/aem-groovy-console).
 
 
-# AEM Groovy Console
+Features:
 
-## Overview
+* GUI to run scripts and see history of runs
+* Run mode support
+* Fallback scripts in case of errors
+* Extension of Groovy Console bindings
+* Service API
+* Health Checks
 
-The AEM Groovy Console provides an interface for running [Groovy](https://www.groovy-lang.org) scripts in Adobe
-Experience Manager. Scripts can be created to manipulate content in the JCR, call OSGi services, or execute arbitrary
-code using the AEM, Sling, or JCR APIs. After installing the package in AEM (instructions below), see
-the [console page](http://localhost:4502/groovyconsole) for documentation on the available bindings and methods. Sample
-scripts are included in the package for reference.
+The tool was presented at [adaptTo() conference in Berlin](https://adapt.to/2018/en/schedule/aem-easy-content-upgrade.html). You can get the slides there and also see the video here:
 
-![Screenshot](docs/assets/screenshot.png)
+[![AECU @ adaptTo() 2018](https://img.youtube.com/vi/ZPEJ_cbzBoE/0.jpg)](https://www.youtube.com/watch?v=ZPEJ_cbzBoE "AECU @ adaptTo() 2018")
 
-## Compatibility
+Table of contents
+1. [Requirements](#requirements)
+2. [Installation](#installation)
+3. [File and Folder Structure](#structure)
+4. [Execution of Migration Scripts](#execution)
+    1. [Startup Hook](#startupHook)
+    2. [Install Hook](#installHook)
+    2. [Manual Execution](#manualExecution)
+5. [History of Past Runs](#history)
+6. [Extension to Groovy Console](#groovy)
+    1. [Content Upgrades](#content_upgrades)
+        1. [Collect Options](#binding_collect)
+        2. [Filter Options](#binding_filter)
+        3. [Execute Options](#binding_execute)
+        4. [Run Options](#binding_run)
+    2. [Rights and Roles Testing](#rights_and_roles_testing)
+        1. [Defining Tests](#defining_tests)
+        2. [Path Specification](#test_path_spec)
+        3. [Group Specification](#test_group_spec)
+        4. [Tests](#test_list)
+        5. [Execute Tests](#test_execution)
+7. [Security](#security)
+    1. [Limit Access to AECU](#limitAccess)
+    2. [Service Users](#serviceUsers)
+8. [JMX Interface](#jmx)
+9. [Health Checks](#healthchecks)
+10. [API Documentation](#api)
+11. [License](#license)
+12. [Changelog](#changelog)
+13. [Developers](#developers)
 
-AEM Groovy Console 19.0.1+ runs on Java 8 and 11 with an embedded Groovy version of 4.0.9
 
-Supported versions:
+<a name="requirements"></a>
 
-* AEM On premise: `>= 6.5.10`
-* AEM as a Cloud Service: `>= 2022.11`
-* Sling: `>=12`
+# Requirements
 
-To install the AEM Groovy Console on older AEM versions check the original
-project [aem-groovy-console](https://github.com/CID15/aem-groovy-console)
+AECU requires Java 8 and AEM 6.5 or AEM Cloud. For older AEM versions see below.
 
-## Installation
+| AEM Version   | Groovy Console | AECU      |
+| ------------- | -------------- | --------- |
+| 6.5 (>=6.5.3)<br/>Cloud | included     | 6.x, 5.x |
 
-### Manual
+## Older AEM versions
+For AEM 6.3/6.4 please see here what versions are compatible. Groovy Console can be installed manually if [bundle install](#bundleInstall) is not used.
 
-1. Download the
-   console [aem-groovy-console-all](https://github.com/orbinson/aem-groovy-console/releases/download/18.0.0/aem-groovy-console-all-18.0.0.zip)
-   content package and install with [PackMgr](http://localhost:4502/crx/packmgr). For previous versions you can search
-   on the [Maven Central repository](https://search.maven.org/search?q=a:aem-groovy-console).
+| AEM Version   | Groovy Console | AECU      |
+| ------------- | -------------- | --------- |
+| 6.5 (>=6.5.3) | 16.x <br/>14.x, 13.x     | 4.x<br/> 3.x, 2.x |
+| 6.4           | 14.x, 13.x               | 3.x, 2.x          |
+| 6.3           | 12.x                     | 1.x               |
 
-2. Navigate to the [groovyconsole](http://localhost:4502/groovyconsole) page.
+<a name="installation"></a>
 
-### Maven profiles
+# Installation
 
-Maven profiles can be used to install the bundles to AEM / Sling
+## AEM 6.5 and AEM Cloud
 
-* AEM Author running on localhost:4502
-    * api, bundle, ui.apps, ui.apps.aem, ui.config, ui.content: `-P auto-deploy`
-    * all: `-P auto-deploy-single-package,aem`
-* AEM Publish running on localhost:4503
-    * api, bundle, ui.apps, ui.apps.aem, ui.config, ui.content: `-P auto-deploy,publish`
-    * all: `-P auto-deploy-single-package,aem,publish`
-* Sling running on localhost:8080
-    * api, bundle, ui.apps, ui.apps.aem, ui.config, ui.content: `-P auto-deploy,sling`
-    * all: `-P auto-deploy-single-package,sling`
+AECU includes the [Groovy Console](https://github.com/orbinson/aem-groovy-console) package. Please do not install
+Groovy Console manually. The API is not stable and using the included version makes sure AECU and Groovy Console
+are compatible.
 
-### Embedded package
+### AEM 6.5
 
-To deploy the Groovy Console as an embedded package you need to update your `pom.xml`
+You can download the package from [Maven Central](https://repo1.maven.org/maven2/de/valtech/aecu/aecu.complete/) or our [releases section](https://github.com/valtech/aem-easy-content-upgrade/releases). The aecu.complete package will install the AECU software and [Groovy Console](https://github.com/orbinson/aem-groovy-console).
 
-1. Add the `aem-groovy-console-all` to the `<dependencies>` section
+```xml
+        <dependency>
+            <groupId>de.valtech.aecu</groupId>
+            <artifactId>aecu.complete</artifactId>
+            <version>LATEST</version>
+            <type>zip</type>
+        </dependency>
+```
 
-   ```xml
-   <dependency>
-     <groupId>be.orbinson.aem</groupId>
-     <artifactId>aem-groovy-console-all</artifactId>
-     <version>18.0.0</version>
-     <type>zip</type>
-   </dependency>
-   ```
-2. Embed the package in with
-   the [filevault-package-maven-plugin](https://jackrabbit.apache.org/filevault-package-maven-plugin/) in
-   the `<embeddeds>` section
+### AEM Cloud
 
-   ```xml
-   <embedded>
-      <groupId>be.orbinson.aem</groupId>
-      <artifactId>aem-groovy-console-all</artifactId>
-      <target>/apps/vendor-packages/content/install</target>
-   </embedded>
-   ```
+You can download the package from [Maven Central](https://repo1.maven.org/maven2/de/valtech/aecu/aecu.complete.cloud/) or our [releases section](https://github.com/valtech/aem-easy-content-upgrade/releases). The aecu.complete package will install the AECU software and [Groovy Console](https://github.com/orbinson/aem-groovy-console).
 
-### AEM Dispatcher
+```xml
+        <dependency>
+            <groupId>de.valtech.aecu</groupId>
+            <artifactId>aecu.complete.cloud</artifactId>
+            <version>LATEST</version>
+            <type>zip</type>
+        </dependency>
+```
 
-If you need to have the Groovy Console available through the dispatcher on a publish instance you can add the filters
-following configuration.
+## Older AEM Versions (<6.5/Cloud)
 
-```text
-# Allow Groovy Console page
-/001 {
-    /type "allow"
-    /url "/groovyconsole"
+You can download the package from [Maven Central](https://repo1.maven.org/maven2/de/valtech/aecu/aecu.ui.apps/) or our [releases section](https://github.com/valtech/aem-easy-content-upgrade/releases). The aecu.ui.apps package will install the AECU software. It requires that you installed [Groovy Console](https://github.com/OlsonDigital/aem-groovy-console) before.
+
+```xml
+        <dependency>
+            <groupId>de.valtech.aecu</groupId>
+            <artifactId>aecu.ui.apps</artifactId>
+            <version>LATEST</version>
+            <type>zip</type>
+        </dependency>
+```
+
+
+<a name="bundleInstall"></a>
+
+### Bundle Installation
+
+To simplify installation we provide a bundle package that already includes the Groovy Console. This makes sure there are no compatibility issues.
+The package is also available on [Maven Central](https://repo1.maven.org/maven2/de/valtech/aecu/aecu.bundle/) or our [releases section](https://github.com/valtech/aem-easy-content-upgrade/releases).
+
+```xml
+        <dependency>
+            <groupId>de.valtech.aecu</groupId>
+            <artifactId>aecu.bundle</artifactId>
+            <version>LATEST</version>
+            <type>zip</type>
+        </dependency>
+```
+
+
+## Uninstallation
+
+The application can be removed by deleting the following paths:
+* `/apps/valtech/aecu`
+* `/var/groovyconsole/scripts/aecu`
+* `/conf/groovyconsole/scripts/aecu`
+* `/var/aecu`
+* `/var/aecu-installhook`
+
+Afterwards, you can delete the "aecu.*" packages in package manager.
+
+For Groovy Console delete:
+
+* `/apps/groovyconsole`
+* `/etc/clientlibs/groovyconsole`
+* `/var/groovyconsole`
+
+Then delete "aem-groovy-console" packages in package manager.
+
+
+<a name="structure"></a>
+
+# File and Folder Structure
+
+All migration scripts need to be located in:
+
+* `/apps/aecu-scripts` (AEM Cloud automatic execution with startup hook, since 6.0.0)
+* `/conf/groovyconsole/scripts/aecu` (AEM onprem manual and install hook execution, AEM Cloud manual execution)
+* `/var/groovyconsole/scripts/aecu` (deprecated)
+
+AEM as a Cloud Service requires the scripts to be executed automatically in /apps to avoid issues with the startup hook. Manual scripts can still be located in /conf.
+
+In this folder you can create an unlimited number of folders and files. E.g. organize your files by project or deployment.
+The content of the scripts is plain Groovy code that can be run via [Groovy Console](https://github.com/orbinson/aem-groovy-console).
+
+If your package containing the scripts is bundled in another package please make sure that this is done using "subPackages" in pom.xml.
+
+<img src="docs/images/files.png">
+
+There are just a few naming conventions:
+
+* Run modes: folders can contain run modes to limit the execution to a specific target environment. E.g. some scripts are for author only or for your local dev environment. Multiple 
+run mode combinations can be separated with ";" (e.g. "folder.author.test;author.stage" will be executed on test+stage author but not on prod author).
+* Always selector: if a script name ends with ".always.groovy" then it will be executed by
+[install hook](#installHook) on each package installation. There will be no more check if this script
+was already executed before.
+* Fallback selector: if a script name ends with ".fallback.groovy" then it will be executed only if
+the corresponding script failed with an exception. E.g. if there is "script.groovy" and "script.fallback.groovy" then the fallback script only gets executed if "script.groovy" fails.
+* Prechecks selector: if a script name ends with ".prechecks.groovy" then it will be executed before
+the corresponding script. If it fails with an exception then the corresponding script will be skipped. E.g. if there is "script.groovy" and "script.prechecks.groovy" then the "script.groovy" only gets executed if "script.prechecks.groovy" runs without exception.
+* Reserved file names
+    * fallback.groovy: optional directory level fallback script. This will be executed if a script fails and no script specific fallback script is provided.
+    * prechecks.groovy: optional directory level prechecks script. This will be executed before a script runs and no script specific prechecks script is provided.
+    
+<a name="execution"></a>
+
+# Execution of Migration Scripts
+
+<a name="startupHook"></a>
+
+## Startup Hook (since 6.0.0)
+
+This is the preferred method to execute your scripts on AEM Cloud installations. It allows to run them without any user interaction. Just package them with a content package and do a regular deployment.
+
+The startup hook automatically runs on AEM Cloud (detecting the composite node store). It executes all scripts in /apps/aecu-scripts when the server is started during deploy.
+Please note that changes to /apps or /libs are not possible as the startup hook does not run during build phase of the images.
+
+Please note that scripts will not be executed on a local development instance of AEM Cloud (no composite node store). Here you can activate the execution via install hook. See pom.xml of examples-cloud package how to activate the install hook via profile. Install hooks must not be activated for AEM Cloud environments hosted by Adobe.
+
+As multiple AEM instances share the same repository scripts might be executed multiple times during the same deployment. AECU checks if there is an ongoing migration that started less than 30 min ago to avoid duplicate executions. But there can be edge cases where scripts are run by multiple instances. Please make sure your scripts can handle this.
+Scripts with "always" selector might be executed at random times as cloud instances can be added/removed dynamically based on load.
+
+<a name="installHook"></a>
+
+## Install Hook
+
+This is the preferred method to execute your scripts on non-AEM-Cloud installations. It allows to run them without any user interaction. Just package them with a content package and do a regular deployment.
+
+You can add the install hook by adding de.valtech.aecu.core.installhook.AecuInstallHook as a hook to your package properties. The AECU package needs to be installed beforehand.
+
+```xml
+<plugin>
+    <groupId>com.day.jcr.vault</groupId>
+    <artifactId>content-package-maven-plugin</artifactId>
+    <extensions>true</extensions>
+    <configuration>
+        <filterSource>src/main/content/META-INF/vault/filter.xml</filterSource>
+        <verbose>true</verbose>
+        <failOnError>true</failOnError>
+        <group>Valtech</group>
+        <properties>
+            <installhook.aecu.class>de.valtech.aecu.core.installhook.AecuInstallHook</installhook.aecu.class>
+        </properties>
+    </configuration>
+</plugin>
+```
+
+The Groovy scripts must be covered by the filter, i.e. must be imported into the repository during installation.
+
+By default each Groovy script is only executed once (if it does not end with suffix `.always.groovy`). It will be re-executed though in case any of the Groovy scripts have been modified (through the package installation) or in case the previous execution was not successful.
+
+<a name="manualExecution"></a>
+
+## Manual Execution
+
+Manual script execution is useful in case you want to manually rerun a script (e.g. because it failed before). You can find the execute feature in AECU's tools menu.
+
+<img src="docs/images/tools.png">
+
+Execution is done in two simple steps:
+
+1. Select the base path and run the search. This will show a list of runnable scripts.
+2. Run all scripts in batch or just single ones. If you run all you can change the order before (drag and drop with marker at the right).
+
+Once execution is done you will see if the script(s) succeeded. Click on the history link to see the details.
+
+<img src="docs/images/run.png">
+
+<a name="history"></a>
+
+# History of Past Runs
+
+You can find the history in AECU's tools menu.
+
+<img src="docs/images/tools.png">
+
+The history shows all runs that were executed via package install hook, manual run and JMX. It will not display scripts that were executed directly via Groovy Console.
+
+<img src="docs/images/historyOverview.png">
+
+You can click on any run to see the full details. This will show the status for each script. You can also see the output of all scripts.
+
+<img src="docs/images/historyDetails.png">
+
+## Search History
+
+AECU maintains a full-text search index for the history entries. You can search for script names and their output.
+
+Simply click on the magnifying glass in header to open the search bar:
+
+<img src="docs/images/fulltext1.png">
+
+Now you can enter a search term and will see the runs that contain this text. Click on the link to see the full history entry.
+
+<img src="docs/images/fulltext2.png">
+
+<a name="groovy"></a>
+
+# Extension to Groovy Console
+
+AECU adds its own binding to Groovy Console. You can reach it using "aecu" in your script.
+
+<a name="content_upgrades"></a>
+
+## Content Upgrades
+
+This part provides methods to perform common tasks like property modification or node deletion.
+
+It follows a collect, filter, execute process.
+
+<a name="binding_collect"></a>
+
+### Collect Options
+In the collect phase you define which nodes should be checked for a migration.
+
+* forResources(String[] paths): use the given paths without any subnodes
+* forChildResourcesOf(String path): use all direct childs of the given path (but no grandchilds)
+* forDescendantResourcesOf(String path): use the whole subtree under this path excluding the parent root node
+* forResourcesInSubtree(String path): use the whole subtree under this path including the parent root node
+* forResourcesBySql2Query(String query): executes the query and applies actions on found resources
+* forResourcesByPropertyQuery(String path, Map<String, String> conditionProperties): search in given path for the given list of property values (node type nt:base)
+* forResourcesByPropertyQuery(String path, Map<String, String> conditionProperties, String nodeType): search in given path for the given list of property values using a specific node type (e.g. "nt:base")
+
+You can call these methods multiple times and combine them. They will be merged together.
+
+Example:
+
+```java
+aecu.contentUpgradeBuilder()
+        .forResources((String[])["/content/we-retail/ca/en"])
+        .forChildResourcesOf("/content/we-retail/us/en")
+        .forDescendantResourcesOf("/content/we-retail/us/en/experience")
+        .forResourcesInSubtree("/content/we-retail/us/en/experience")
+        .forResourcesBySql2Query("SELECT * FROM [cq:Page] AS s WHERE ISDESCENDANTNODE(s,'/content/we-retail/us/en/experience')")
+        .forResourcesByPropertyQuery("/content/we-retail/us", Collections.singletonMap("sling:resourceType", "weretail/components/content/heroimage"))
+        .forResourcesByPropertyQuery("/content/we-retail/us", Collections.singletonMap("sling:resourceType", "%/heroimage"), "nt:base")
+        .doSetProperty("name", "value")
+        .run()
+```
+
+<a name="binding_filter"></a>
+
+### Filter Options
+These methods can be used to filter the nodes that were collected above. Multiple filters can be applied for one run (they are combined with `AND` logic, i.e. all filters must match)
+
+#### Filter by Properties
+
+Filters the resources by property values.
+
+* filterByHasProperty: matches all nodes that have the given property. The value of the property is not relevant.
+* filterByNotHasProperty: matches all nodes that do not have the given property. The value of the property is not relevant.
+* filterByProperty: matches all nodes that have the given attribute value. Filter does not match if attribute is not present. By using a value of "null" you can search if an attribute is not present.
+* filterByPropertyIsMultiple: matches all nodes where a given property is a multi-value property (such as an array or list) and contains a specific value or values. The filter does not match if the attribute does not exist, or if it exists but is not a multi-value property or does not contain the specified value or values.
+* filterByNotProperty: matches all nodes that do not have the given attribute value. Filter matches if attribute is not present.
+* filterByProperties: use this to filter by a list of property values (e.g. sling:resourceType). All properties in the map are required to to match. Filter does not match if attribute does not exist.
+* filterByNotProperties: use this to filter by a list of property values (e.g. sling:resourceType) is not matching. If any property in the map does not match the filter matches. Filter matches if attribute does not exist.
+* filterByMultiValuePropContains: checks if all condition values are contained in the defined attribute. Filter does not match if attribute does not exist.
+* filterByNotMultiValuePropContains: checks if not all condition values are contained in the defined attribute. Filter matches if attribute does not exist.
+* filterByPropertyRegex: filters by a single property matching a regular expression for the value. This is intended for single value properties. Hint: use "(?s)" at the beginning of the regex to search multiline content.
+* filterByNotPropertyRegex: filters by a single property not matching a regular expression for the value. This is intended for single value properties. Hint: use "(?s)" at the beginning of the regex to search multiline content.
+* filterByAnyPropertyRegex: filters by any property that matches a given regular expression for the value. This reads all properties as single-valued String properties. Hint: use "(?s)" at the beginning of the regex to search multiline content.
+* filterByNoPropertyRegex: filters by no property matching a given regular expression for the value. This reads all properties as single-valued String properties. Hint: use "(?s)" at the beginning of the regex to search multiline content.
+
+```java
+filterByHasProperty(String name)
+filterByNotHasProperty(String name)
+filterByProperty(String name, Object value)
+filterByNotProperty(String name, Object value)
+filterByProperties(Map<String, String> properties)
+filterByNotProperties(Map<String, Object> conditionProperties)
+filterByMultiValuePropContains(String name,  Object[] conditionValues)
+filterByNotMultiValuePropContains(String name, Object[] conditionValues)
+filterByPropertyRegex(String name, String regex)
+filterByNotPropertyRegex(String name, String regex)
+filterByAnyPropertyRegex(String regex)
+filterByNoPropertyRegex(String regex)
+```
+
+Example:
+
+```java
+def conditionMap = [:]
+conditionMap["sling:resourceType"] = "weretail/components/structure/page"
+
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByHasProperty("myProperty")
+        .filterByProperty("sling:resourceType", "wcm/foundation/components/responsivegrid")
+        .filterByProperties(conditionMap)
+        .filterByMultiValuePropContains("myAttribute", ["value"] as String[])
+        .filterByPropertyRegex("myproperty", ".*test.*")
+        .filterByPropertyRegex("my_multiline_property", "(?s).*test.*")
+        .filterByAnyPropertyRegex(".*test.*")
+        .doSetProperty("name", "value")
+        .run()
+```
+
+#### Filter by Node Name
+
+You can also filter nodes by their name.
+
+* filterByNodeName(String name): process only nodes which have this exact name
+* filterByNotNodeName(String name): process only nodes which do not have this exact name
+* filterByNodeNameRegex(String regex): process nodes that have a name that matches the given regular expression
+* filterByNotNodeNameRegex(String regex): process nodes that have a name that does not match the given regular expression
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByNodeName("jcr:content")
+        .filterByNotNodeName("jcr:content")
+        .filterByNodeNameRegex("jcr.*")
+        .filterByNotNodeNameRegex("jcr.*")
+        .doSetProperty("name", "value")
+        .run()
+```
+
+#### Filter by Node Path
+
+Nodes can also be filtered by their path using a regular expression.
+
+* filterByPathRegex(String regex): process nodes whose path matches the given regular expression
+* filterByNotPathRegex(String regex): process nodes whose path does not match the given regular expression
+* filterByNodeRootPaths: filters resources that do not meet the given list of root paths.
+
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByPathRegex(".*/jcr:content/.*")
+        .filterByNotPathRegex(".*/jcr:content/.*")
+        .filterByNodeRootPaths(Arrays.asList("/content/we-retail/ca/en", "/content/we-retail/be/nl"))
+        .doSetProperty("name", "value")
+        .run()
+```
+
+#### Filter by Node Existence
+
+Filters resources by the (non-)existence of relative or absolute node path.
+
+* filterByNodeExists(String path): process if the given subnode or absolute node exists
+* filterByNodeNotExists(String path): process if the given subnode or absolute node does not exist
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByNodeExists("jcr:content/meta")
+        .filterByNodeExists("/content")
+        .filterByNodeNotExists("jcr:content/meta")
+        .filterByNodeNotExists("/content")
+        .doSetProperty("name", "value")
+        .run()
+```
+
+#### Combine Multiple Filters
+You can combine filters with AND and OR to build more complex filters.
+
+```java
+def conditionMap_type = [:]
+conditionMap_type['sling:resourceType'] = "weretail/components/content/heroimage"
+def conditionMap_file = [:]
+conditionMap_file['fileReference'] = "/content/dam/we-retail/en/activities/running/fitness-woman.jpg"
+def conditionMap_page = [:]
+conditionMap_page['jcr:primaryType'] = "cq:PageContent"
+
+def complexFilter =  new ORFilter(
+        [ new FilterByProperties(conditionMap_page),
+          new ANDFilter( [
+                  new FilterByProperties(conditionMap_type),
+                  new FilterByProperties(conditionMap_file)
+          ] )
+        ])
+
+aecu.contentUpgradeBuilder()
+        .forDescendantResourcesOf("/content/we-retail/ca/en", false)
+        .filterWith(complexFilter)
+        .filterNotWith(complexFilter)
+        .filterWith(new NOTFilter(new FilterByPathRegex(".*jcr:content.*")))
+        .doSetProperty("name", "value")
+        .run()        
+```
+
+<a name="binding_execute"></a>
+
+### Execute Options
+
+#### Update Single-value Properties
+
+* doSetProperty(String name, Object value): sets the given property to the value. Any existing value is overwritten.
+* doSetProperty(String name, Object value, String pathToSubnode): sets the given property in the subnode to the value. If subnode does not exist it will be created as nt:unstructured (incl. missing intermediate nodes). Any existing value is overwritten.
+* doSetProperty(String name, Object value, String pathToSubnode, String primaryType): sets the given property in the subnode to the value. If subnode does not exist it will be created as given in primaryType (incl. missing intermediate nodes). Any existing value is overwritten.
+* doDeleteProperty(String name): removes the property with the given name if existing.
+* doDeleteProperty(String name, String pathToSubnode): removes the property on subnode pathToSubnode with the given name if existing.
+* doRenameProperty(String oldName, String newName): renames the given property if existing. If the new property name already exists it will be overwritten.
+* doRenameProperty(String oldName, String newName, String pathToSubnode): renames the given property on subnode pathToSubnode if existing. If the new property name already exists it will be overwritten.
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByNodeName("jcr:content")
+        .doSetProperty("name", "value")
+        .doSetProperty("name", "value", "root/breadCrumb")
+        .doDeleteProperty("nameToDelete")
+        .doDeleteProperty("nameToDelete", "root/breadCrumb")
+        .doRenameProperty("oldName", "newName")
+        .doRenameProperty("oldName", "newName", "root/breadCrumb")
+        .run()
+```
+
+#### Update Multi-value Properties
+
+* doAddValuesToMultiValueProperty(String name, String[] values): adds the list of values to a property. The property is created if it does not yet exist.
+* doRemoveValuesOfMultiValueProperty(String name, String[] values): removes the list of values from a given property. 
+* doReplaceValuesOfMultiValueProperty(String name, String[] oldValues, String[] newValues): removes the old values and adds the new values in a given property. 
+* doJoinProperty(String name): joins values of a property into a single value. Uses "," to join multiple values. Deletes properties with empty array values.
+* doJoinProperty(String name, Object fallback): joins values of a property into a single value. Uses "," to join multiple values. Sets the fallback for properties having an empty array as a value.
+* doJoinProperty(String name, Object fallback, String separator): joins values of a property into a single value. Uses the given separator to join multiple values. Sets the fallback for properties having an empty array as a value.
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByNodeName("jcr:content")
+        .doAddValuesToMultiValueProperty("name", (String[])["value1", "value2"])
+        .doRemoveValuesOfMultiValueProperty("name", (String[])["value1", "value2"])
+        .doReplaceValuesOfMultiValueProperty("name", (String[])["old1", "old2"], (String[])["new1", "new2"])
+        .doJoinProperty("name")
+        .doJoinProperty("name", "fallbackValue")
+        .doJoinProperty("name", "fallbackValue", ",")
+        .run()
+```
+
+#### Update Mixins
+
+* doAddMixin(String mixinName): adds a mixin to a node if the mixin is valid
+* doRemoveMixin(String mixinName): removes a mixin from a node if the mixin is present
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByNodeName("jcr:content")
+        .doAddMixin("mix:versionable")
+        .doAddMixin("mix:mymixin")
+        .doRemoveMixin("mix:lockable")
+        .run()
+```
+
+#### Copy and Move Properties
+
+This will copy or move a property to a subnode. You can also change the property name.
+
+* doCopyPropertyToRelativePath(String name, String newName, String relativeResourcePath): copy the property to the given path under the new name.
+* doMovePropertyToRelativePath(String name, String newName, String relativeResourcePath): move the property to the given path under the new name.
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByNodeName("jcr:content")
+        .doCopyPropertyToRelativePath("name", "newName", "subnode")
+        .doMovePropertyToRelativePath("name", "newName", "subnode")
+        .run()
+```
+
+#### Replace Property Content
+You can replace the content of String properties. This also supports multi-value properties.
+
+* doReplaceValueInAllProperties(String oldValue, String newValue): replaces the substring "oldValue" with "newValue". Applies to all String properties
+* doReplaceValueInProperties(String oldValue, String newValue, String[] propertyNames): replaces the substring "oldValue" with "newValue". Applies to all specified String properties
+* doReplaceValueInAllPropertiesRegex(String searchRegex, String replacement): checks if the property value(s) match the search pattern and replaces it with "replacement". Applies to all String properties. You can use group references such as $1 (hint: "$" needs to be escaped with "\" in Groovy).
+* doReplaceValueInPropertiesRegex(String searchRegex, String replacement, String[] propertyNames): checks if the property value(s) match the search pattern and replaces it with "replacement".  Applies to specified String properties. You can use group references such as $1 (hint: "$" needs to be escaped with "\" in Groovy).
+* doChangePrimaryType(String newPrimaryType) (since 3.3.0): changes primary type of the resource to the given primary type
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByNodeName("jcr:content")
+        .doReplaceValueInAllProperties("old", "new")
+        .doReplaceValueInProperties("old", "new", (String[]) ["propertyName1", "propertyName2"])
+        .doReplaceValueInAllPropertiesRegex("/content/([^/]+)/(.*)", "/content/newSub/\$2")
+        .doReplaceValueInPropertiesRegex("/content/([^/]+)/(.*)", "/content/newSub/\$2", (String[]) ["propertyName1", "propertyName2"])
+        .doChangePrimaryType("nt:unstructured")
+        .run()
+```
+
+#### Copy and Move Nodes
+
+The matching nodes can be copied/moved to a new location. You can use ".." if you want to step back in path.
+
+* doRename(String newName): renames the resource to the given name
+* doCopyResourceToRelativePath(String relativePath): copies the node to the given target path
+* doCopyResourceToRelativePath(String relativePath, String newName): copies the node to the given target path under the new name
+* doMoveResourceToRelativePath(String relativePath): moves the node to the given target path
+* doMoveResourceToPathRegex(String matchPattern, String replacementExpr): moves a resource if its path matches the pattern to the target path obtained by applying the replacement expression. You can use group references such as $1 (hint: "$" needs to be escaped with "\" in Groovy).
+* doReorderNode(String nameOfNodeToMove, String newSuccessor) (since AECU 5.1.0): reorders subnode "nameOfNodeToMove" before subnode "newSuccessor". Set "newSuccessor" to null to order at the end.
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByNodeName("jcr:content")
+        .doRename("newNodeName")
+        .doCopyResourceToRelativePath("subNode")
+        .doCopyResourceToRelativePath("../subNode", "newName")
+        .doMoveResourceToRelativePath("../subNode")
+        .doMoveResourceToPathRegex("/content/we-retail/(\\w+)/(\\w+)/(\\w+)", "/content/somewhere/\$1/and/\$2")
+        .doReorderNode("toMove", "successor")
+        .run()
+```
+
+#### Create Nodes
+
+Sometimes a new node needs to be created e.g. to add or configure a component.
+
+* doCreateResource(String name, String primaryType): creates a new node using the name and primary type
+* doCreateResource(String name, String primaryType, Map<String, Object> properties): creates a new node using additional properties
+* doCreateResource(String name, String primaryType, String relativePath): same as above but creates the node under the relative path
+* doCreateResource(String name, String primaryType, Map<String, Object> properties, String relativePath): same as above but creates the node under the relative path
+
+```java
+def map = [
+  "testval": "test"
+]
+
+aecu.contentUpgradeBuilder()
+        .forResources((String[]) ["/content/we-retail/jcr:content"])
+        .doCreateResource("mynode1", "nt:unstructured")
+        .doCreateResource("mynode2", "nt:unstructured", map)
+        .doCreateResource("mysubnode1", "nt:unstructured", "mynode1")
+        .doCreateResource("mysubnode2", "nt:unstructured", map, "mynode2")
+        .run()
+```
+
+#### Delete Nodes
+
+You can delete nodes that match your collection and filter.
+
+* doDeleteResource(): deletes the resource that matched the collection and filter 
+* doDeleteResource(String... children): deletes the specified child nodes of the matching resource
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByNodeName("jcr:content")
+        .doDeleteResource()
+        .doDeleteResource("child1", "child2", "child3")
+        .run()
+```
+
+##### Node (De)activation
+
+Please note that this is for non-page resources such as commerce products. For page level (de)activation there are [separate methods](#binding_page_replication).
+
+* doActivateResource(): activates the current resource
+* doDeactivateResource(): deactivates the current resource
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .doDeactivateResource()
+        .doActivateResource()
+        .run()
+```
+
+#### Page Actions
+
+AECU can run actions on the page that contains a filtered resource. This is e.g. helpful if you filter by page resource type.
+
+Please note that there is no check for duplicate actions. If you run a page action for two resources in the same page then the action will be executed twice.
+
+<a name="binding_page_replication"></a>
+
+##### Page (De)activation
+
+* doActivateContainingPage(): activates the page that contains the current resource
+* doDeactivateContainingPage(): deactivates the page that contains the current resource
+* doTreeActivateContainingPage(): activates the page that contains the current resource AND all subpages
+* doTreeActivateContainingPage(boolean skipDeactivated): activates the page that contains the current resource AND all subpages. If "skipDeactivated" is set to true then deactivated pages will be ignored and not activated.
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByProperty("sling:resourceType", "weretail/components/structure/page")
+        .doActivateContainingPage()
+        .doDeactivateContainingPage()
+        .doTreeActivateContainingPage()
+        .doTreeActivateContainingPage(true)
+        .run()
+```
+
+##### Page Deletion
+
+* doDeleteContainingPage(): deletes the page (incl. subpages) that contains the current resource
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByProperty("sling:resourceType", "weretail/components/structure/page")
+        .doDeleteContainingPage()
+        .run()
+```
+
+##### Page Tagging
+
+Tags can be specified by Id (e.g. "properties:style/color") or path (e.g. "/etc/tags/properties/orientation/landscape").
+
+* doAddTagsToContainingPage(): adds the given tags to the page
+* doSetTagsForContainingPage(): sets the page's tags. This will delete any tags that were assigned but are not part of the new tag list. An empty list of tags will delete all tags.
+* doRemoveTagsFromContainingPage(): removes the given tags from the page
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByProperty("sling:resourceType", "weretail/components/structure/page")
+        .doAddTagsToContainingPage("properties:style/color", "/etc/tags/properties/orientation/landscape")
+        .doSetTagsForContainingPage("properties:style/color", "/etc/tags/properties/orientation/landscape")
+        .doRemoveTagsFromContainingPage("properties:style/color", "/etc/tags/properties/orientation/landscape")
+        .run()
+```
+
+##### Validate Page Rendering
+
+AECU can do some basic tests if pages render correctly. You can use this to verify a migration run.
+
+* doCheckPageRendering(): checks if page renders with status code 200
+* doCheckPageRendering(int code): checks if page renders with given status code 
+* doCheckPageRendering(String textPresent): verifies that the given text is included in page output + page renders with code 200
+* doCheckPageRendering(String textPresent, String textNotPresent): verifies that the given text is (not) included in page output + page renders with code 200. The parameters textPresent/textNotPresent can be set to null if you do not need the check.
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByProperty("sling:resourceType", "weretail/components/structure/page")
+        .doCheckPageRendering()
+        .doCheckPageRendering(200)
+        .doCheckPageRendering("some test string")
+        .doCheckPageRendering("some test string", "exception")
+        .run()
+```
+
+#### Print Nodes and Properties
+
+Sometimes, you only want to print some information about the matched nodes.
+
+* printPath(): prints the path of the matched node
+* printProperty(String property): prints the value of the specified property of the matched node
+* printJson(): prints a json representation of all the matched node's properties
+
+```java
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .filterByNodeName("jcr:content")
+        .printPath()
+        .printProperty("sling:resourceType")
+        .printJson()
+        .run()
+```
+
+#### Custom Actions
+
+You can also hook in custom code to perform actions on resources. For this "doCustomResourceBasedAction()" can take a Lambda expression.
+
+* doCustomResourceBasedAction(): run your custom code
+
+```java
+def myAction = {
+    resource -> 
+    hasChildren = resource.hasChildren()
+    String output = resource.path + " has children: "
+    output += hasChildren ? "yes" : "no"
+    return output
 }
-/002 {
-    /type "allow"
-    /url "/apps/groovyconsole.html"
+
+aecu.contentUpgradeBuilder()
+        .forChildResourcesOf("/content/we-retail/ca/en")
+        .doCustomResourceBasedAction(myAction)
+        .run()
+```
+
+
+
+<a name="binding_run"></a>
+
+### Run Options
+
+At the end you can run all actions or perform a dry-run first. The dry-run will just provide output about modifications but not save any changes. The normal run saves the session, no additional "session.save()" is required.
+
+* run(): performs all actions and saves the session
+* dryRun(): only prints actions but does not perform repository changes
+* run(boolean dryRun): the "dryRun" parameter defines if it should be a run or dry-run
+
+<a name="rights_and_roles_testing"></a>
+
+## Rights and Roles Testing
+
+AECU allows you to automate permission tests. This greatly speeds up your testing in this area since
+
+* test can be run by developers and testers
+* test scripts can be written by developers and testers
+* easy to read test summaries make it easy to identify open topics
+* test scripts can be executed during package install and fail the installation if needed
+
+Note: Testing is only be supported on group level. User level permissions are not supported as it is bad practice to assign permissions directly to users.
+
+<a name="defining_tests"></a>
+
+### Defining Tests
+
+Each test block starts with "aecu.validateAccessRights()". Then you define the paths and groups to check with "forPaths/forGroups".
+Next, the actions to check are listed (e.g. "canRead()"). For each action there is also a "cannot" test.
+Finally, you start the test with "validate/simulate".
+
+```
+aecu
+    .validateAccessRights()
+    .forPaths("/content/we-retail/us/en/men", "/content/we-retail/de", "/content/we-retail/fr")
+    .forGroups("content-authors")
+    .canRead()
+    .canModify()
+    .canDeletePage()
+    .validate()
+```
+
+You can call forPaths()/forGroups() multiple times. The can(not)* tests will always use the last one.
+E.g. this will test
+ * content-authors: read, modify, delete page
+ * content-readers: read, no-modify, no-delete page
+The paths are the same for both groups.
+
+```
+aecu
+    .validateAccessRights()
+    .forPaths("/content/we-retail/us/en/men", "/content/we-retail/de", "/content/we-retail/fr")
+    .forGroups("content-authors")
+    .canRead()
+    .canModify()
+    .canDeletePage()
+    .forGroups("content-readers")
+    .canRead()
+    .cannotModify()
+    .cannotDeletePage()
+    .validate()
+```
+
+<a name="test_path_spec"></a>
+
+#### Path Specification
+
+The list of paths to check is set via "forPaths()". Here you can simply set all paths needed.
+Please note that the tests take some time. Therefore, take some example paths but not each and every page.
+
+```
+aecu
+    .validateAccessRights()
+    .forPaths("/content/we-retail/us/en/men", "/content/we-retail/de", "/content/we-retail/fr")
+    .forGroups("content-authors")
+    .canRead()
+    .validate()
+```
+
+<a name="test_group_spec"></a>
+
+#### Group Specification
+
+The list of groups to check is set via "forGroups()". Here you can simply set all groups needed.
+If groups need different checks then use multiple "forGroups()" or multiple calls of "aecu.validateAccessRights()".
+
+```
+aecu
+    .validateAccessRights()
+    .forPaths("/content/we-retail/us/en/men")
+    .forGroups("content-authors", "content-readers")
+    .canRead()
+    .validate()
+```
+
+<a name="test_list"></a>
+
+#### Tests
+
+##### Simple ACL Tests
+These are the basic tests to check e.g. for read/write access to a page/resource.
+
+ * canRead(): has read access to specified path
+ * cannotRead(): does not have read access to specified path
+ * canModify(): has write access to specified path
+ * cannotModify(): does not have write access to specified path
+ * canCreate(): can create new nodes (e.g. pages) in specified path
+ * cannotCreate(): cannot create new nodes (e.g. pages) in specified path
+ * canDelete(): has delete permission to specified path
+ * cannotDelete(): does not have delete permission to specified path
+ * canReplicate(): can (de)activate the specified path
+ * cannotReplicate(): cannot (de)activate the specified path
+ * canReadAcl(): can read the ACLs of the specified path
+ * cannotReadAcl(): cannot read the ACLs of the specified path
+ * canWriteAcl(): can change the ACLs of the specified path
+ * cannotWriteAcl(): cannot change the ACLs of the specified path
+ 
+ Example:
+
+```
+aecu
+    .validateAccessRights()
+    .forPaths("/content/we-retail/us/en/men", "/content/we-retail/de", "/content/we-retail/fr")
+    .forGroups("content-readers")
+    .canRead()
+    .cannotModify()
+    .cannotReplicate()
+    .validate()
+```
+
+##### Page Tests
+The following tests include additional checks for page nodes. Use them if you know the tested path is a page.
+As they inherit from the simple ACL tests (e.g. "canReadPage()" includes "canRead()") there is no need to call both.
+
+ * canReadPage(): page exists and is readable
+ * cannotReadPage(): page exists and is not readable
+ * canCreatePage(String templatePath): subpage with given template path can be created. The test fails if the template is not allowed at this position.
+ * cannotCreatePage(String templatePath): subpage with given template path cannot be created or template not allowed at this position.
+ * canModifyPage(): a test property can be set on the page content resource
+ * cannotModifyPage(): the test property cannot be set on the page content resource
+ * canDeletePage(): page can be removed (please note that this can take a lot of time if the page has lots of subpages, use canDelete() if you have issues)
+ * cannotDeletePage(): page cannot be removed
+ 
+ Example:
+
+```
+aecu
+    .validateAccessRights()
+    .forPaths("/content/we-retail/us/en/men", "/content/we-retail/de", "/content/we-retail/fr")
+    .forGroups("content-authors")
+    .canReadPage()
+    .canModifyPage()
+    .canCreatePage("/conf/we-retail/settings/wcm/templates/content-page")
+    .validate()
+```
+
+The following replication tests require "simulate()":
+ 
+ * canReplicatePage(ReplicationActionType type): page can be replicated with given action (e.g. activate)
+ * canReplicatePage(): page can be activated
+ * cannotReplicatePage(): page cannot be activated
+ * cannotReplicatePage(ReplicationActionType type): page cannot be replicated with given action (e.g. activate)
+ 
+ Example:
+
+```
+aecu
+    .validateAccessRights()
+    .forPaths("/content/we-retail/us/en/men", "/content/we-retail/de", "/content/we-retail/fr")
+    .forGroups("content-authors")
+    .canReadPage()
+    .canModifyPage()
+    .canCreatePage("/conf/we-retail/settings/wcm/templates/content-page")
+    .canReplicatePage()
+    .canReplicatePage(ReplicationActionType.ACTIVATE)
+    .simulate()
+```
+
+
+<a name="test_execution"></a>
+
+#### Execute Tests
+
+The tests are executed with "validate()" or "simulate()". The call of "validate()" does not persist any changes.
+In contrast, "simulate()" will also perform actions that cannot be rolled-back. E.g. "simulate()" will do
+an actual page activation for "canReplicatePage()".
+
+If any test requires "simulate()" then it will be noted in its description.
+
+```
+aecu
+    .validateAccessRights()
+    .forPaths("/content/we-retail/us/en/men", "/content/we-retail/de", "/content/we-retail/fr")
+    .forGroups("content-authors")
+    .canRead()
+    .validate()
+
+aecu
+    .validateAccessRights()
+    .forPaths("/content/we-retail/us/en/men", "/content/we-retail/de", "/content/we-retail/fr")
+    .forGroups("content-authors")
+    .canReplicatePage()
+    .simulate()
+
+```
+
+Sample output:
+
+```
+┌───────────────┬────────────────────────────┬────────┐
+│Group          │Path                        │Rights  │
+├───────────────┼────────────────────────────┼────────┤
+│content-authors│/content/we-retail/de       │OK: Read│
+│               │/content/we-retail/fr       │OK: Read│
+│               │/content/we-retail/us/en/men│OK: Read│
+└───────────────┴────────────────────────────┴────────┘
+```
+
+##### Fail Script Execution
+You can stop the whole script execution when a test fails. This will mark the script run as failed.
+
+By default, script execution will not stop on test failures.
+
+ * failOnError(): stop execution on failed test
+ * failOnError(boolean fail): stop execution on failed test if "fail" is true
+ 
+
+```
+aecu
+    .validateAccessRights()
+    .forPaths("/content/we-retail/us/en/men", "/content/we-retail/de", "/content/we-retail/fr")
+    .forGroups("content-authors")
+    .cannotReadPage()
+    .failOnError()
+    .validate()
+```
+
+
+<a name="security"></a>
+
+# Security
+
+<a name="limitAccess"></a>
+
+## Limit Access to AECU (since 3.2)
+For production systems it is recommended to limit the access to specific user groups.
+This can be done via OSGI configuration. Here you can specify groups for read and execute access.
+
+Please not that user "admin" and group "administrators" always has full access. If no groups are specified then nobody except admin/administrators has access.
+
+PID for OSGI config: de.valtech.aecu.core.security.AccessValidationService
+
+<img src="docs/images/limitAccess.png">
+
+<a name="serviceUsers"></a>
+
+## Service Users
+The following service users are installed by AECU:
+
+| User          | Rights | Description |
+| ------------- | -------------- | --------- |
+| aecu-admin | /: jcr:all | Validation of access rights, JMX executeWithHistory() to store script history |
+| aecu-content-migrator | /: jcr:read <br /> /apps: jcr:all <br /> /conf: jcr:all <br /> /content: jcr:all <br /> /etc: jcr:all <br /> /home: jcr:all <br /> /var: jcr:all | Content changes using aecu binding  |
+| aecu-service | /: jcr:read <br /> /var/aecu: jcr:all | AECU execution history |
+
+
+
+<a name="jmx"></a>
+
+# JMX Interface
+
+<img src="docs/images/jmx.png">
+
+AECU provides JMX methods for executing scripts and reading the history. You can also check the version here.
+
+## Execute
+
+This will execute the given script or folder. If a folder is specified then all files (incl. any subfolders) are executed. AECU will respect run modes during execution.
+
+Parameters:
+ * Path: file or folder to execute
+
+## ExecuteWithHistory
+
+Use this e.g. when you copied over content from production to development and need to rerun install hook scripts.
+
+This will execute the given script or folder. If a folder is specified then all files (incl. any subfolders) are executed. AECU will respect run modes and install hook history during execution. This means that scripts that were already executed by install hook are ignored. After execution the install hook history will be updated.
+
+Parameters:
+ * Path: file or folder to execute
+ 
+Sample curl call:
+
+```
+curl -u admin:admin 'http://localhost:5902/system/console/jmx/de.valtech%3Atype%3DAECU/op/executeWithHistory/java.lang.String' --data-raw 'Path=/conf/groovyconsole/scripts/aecu'
+```
+
+## GetHistory
+
+Prints the history of the specified last runs. The entries are sorted by date and start with the last run.
+
+Parameters:
+ * Start index: starts with 0 (= latest history entry)
+ * Count: number of entries to print
+
+## Execute with data
+
+Executes a single file or all files of a folder structure. Additionally, you can pass json data for the script context.
+
+Parameters:
+* Path: path of script/folder
+* Data: Json object string
+
+Example json:
+``` json
+{
+    "rootPaths": [
+        "/content/we-retail"
+    ]
 }
-
-# Allow servlets
-/003 {
-    /type "allow"
-    /path "/bin/groovyconsole/*"
-}
 ```
 
-## Building From Source
+## GetFiles
 
-To build and install the latest development version of the Groovy Console to use in AEM (or if you've made source
-modifications), run
-the following Maven command.
+This will print all files that are executable for a given path. You can use this to check which scripts of a given folder would be executed.
 
-```shell
-mvn clean install -P autoInstallSinglePackage
-```
+Parameters:
+* Path: file or folder to check
 
-## OSGi Configuration
 
-To check the OSGi configuration navigate to
-the [Groovy Console Configuration Service](http://localhost:4502/system/console/configMgr/be.orbinson.aem.groovy.console.configuration.impl.DefaultConfigurationService)
-OSGi configuration page.
+<a name="healthchecks"></a>
 
-| Property                        | Description                                                                                                                       | Default Value |
-|---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|---------------|
-| Email Enabled?                  | Check to enable email notification on completion of script execution.                                                             | `false`       |
-| Email Recipients                | Email addresses to receive notification.                                                                                          | `[]`          |
-| Script Execution Allowed Groups | List of group names that are authorized to use the console.  By default, only the 'admin' user has permission to execute scripts. | `[]`          |
-| Scheduled Jobs Allowed Groups   | List of group names that are authorized to schedule jobs.  By default, only the 'admin' user has permission to schedule jobs.     | `[]`          |
-| Audit Disabled?                 | Disables auditing of script execution history.                                                                                    | `false`       |
-| Display All Audit Records?      | If enabled, all audit records (including records for other users) will be displayed in the console history.                       | `false`       |
-| Thread Timeout                  | Time in seconds that scripts are allowed to execute before being interrupted.  If 0, no timeout is enforced.                      | 0             |
-| Distributed execution enabled?  | If enabled, a script will be able to be replicated from an author and executed on all default replication agents.                 | `false`       |
+# Health Checks
 
-## Batch script execution
+Health checks show you the status of AECU itself and the last migration run.
+You can access them on the [status page](http://localhost:4502/libs/granite/operations/content/healthreports/healthreportlist.html/system/sling/monitoring/mbeans/org/apache/sling/healthcheck/HealthCheck/aecuHealthCheckmBean).
+For the status of older runs use AECU's history page.
 
-Saved scripts can be remotely executed by sending a POST request to the console servlet with either the `scriptPath`
-or `scriptPaths` query parameter.
+<img src="docs/images/healthCheck.png">
 
-### Single script
+<a name="api"></a>
 
-```shell
-curl -d "scriptPath=/conf/groovyconsole/scripts/samples/JcrSearch.groovy" -X POST -u admin:admin http://localhost:4502/bin/groovyconsole/post.json
-```
+# API Documentation
 
-### Multiple scripts
+You can access our AECU service (AecuService class) in case you have special requirements. See the [API documentation](https://valtech.github.io/aem-easy-content-upgrade/).
 
-```shell
-curl -d "scriptPaths=/conf/groovyconsole/scripts/samples/JcrSearch.groovy&scriptPaths=/conf/groovyconsole/scripts/samples/FulltextQuery.groovy" -X POST -u admin:admin http://localhost:4502/bin/groovyconsole/post.json
-```
+<a name="license"></a>
 
-## Extensions
+# License
 
-The Groovy Console provides extension hooks to further customize script execution. The console provides an API
-containing extension provider interfaces that can be implemented as OSGi services in any bundle deployed to an AEM
-instance. See the default extension providers in the `be.orbinson.aem.groovy.console.extension.impl` package for
-examples of how a bundle can implement these services to supply additional script bindings, compilation customizers,
-metaclasses, and star imports.
+The AECU tool is licensed under the [MIT LICENSE](LICENSE).
 
-| Service Interface                                                           | Description                                                                                                                  |
-|-----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| `be.orbinson.aem.groovy.console.api.BindingExtensionProvider`               | Customize the bindings that are provided for each script execution.                                                          |
-| `be.orbinson.aem.groovy.console.api.CompilationCustomizerExtensionProvider` | Restrict language features (via blacklist or whitelist) or provide AST transformations within the Groovy script compilation. |
-| `be.orbinson.aem.groovy.console.api.ScriptMetaClassExtensionProvider`       | Add runtime metaclasses (i.e. new methods) to the underlying script class.                                                   |
-| `be.orbinson.aem.groovy.console.api.StarImportExtensionProvider`            | Supply additional star imports that are added to the compiler configuration for each script execution.                       |
+<a name="changelog"></a>
 
-## Registering Additional Metaclasses
+# Changelog
 
-Services implementing the `be.orbinson.aem.groovy.console.extension.MetaClassExtensionProvider` will be automatically
-discovered and bound by the OSGi container. These services can be implemented in any deployed bundle. The AEM Groovy
-Extension bundle will handle the registration and removal of supplied metaclasses as these services are
-activated/deactivated in the container. See the `DefaultMetaClassExtensionProvider` service for the proper closure
-syntax for registering metaclasses.
+Please see our [history file](HISTORY).
 
-## Notifications
+<a name="developers"></a>
 
-To provide custom notifications for script executions, bundles may implement
-the `be.orbinson.aem.groovy.console.notification.NotificationService` interface (see
-the `be.orbinson.aem.groovy.console.notification.impl.EmailNotificationService` class for an example). These services
-will
-be dynamically bound by the Groovy Console service and all registered notification services will be called for each
-script execution.
+# Developers
 
-## Scheduler
-
-The Scheduler allows for immediate (asynchronous) or Cron-based script execution. Scripts are executed
-as [Sling Jobs](https://sling.apache.org/documentation/bundles/apache-sling-eventing-and-job-handling.html) and are
-audited in the same manner as scripts executed in the console.
-
-### Scheduled Job Event Handling
-
-Bundles may implement services
-extending `be.orbinson.aem.groovy.console.job.event.AbstractGroovyConsoleScheduledJobEventHandler` to provide
-additional post-processing or notifications for completed Groovy Console jobs.
-See `be.orbinson.aem.groovy.console.job.event.DefaultGroovyConsoleEmailNotificationEventHandler` for an example of the
-required annotations to register a custom event handler.
-
-## Sample Scripts
-
-Sample scripts can be found in the [samples](src/main/content/jcr_root/conf/groovyconsole/scripts/samples) directory.
-
-## Kudos
-
-Kudos to [ICF Next](https://github.com/icfnext/aem-groovy-console)
-and [CID 15](https://github.com/CID15/aem-groovy-console) for the initial development of the AEM Groovy Console. We
-forked this plugin because the maintenance of the plugins seems to have stopped.
+See our [developer zone](docs/developers.md).
